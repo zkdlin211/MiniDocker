@@ -1,6 +1,7 @@
 package main
 
 import (
+	"MiniDocker/command"
 	"MiniDocker/log"
 	"github.com/urfave/cli"
 	"os"
@@ -15,8 +16,10 @@ func main() {
 	app.Usage = usage
 
 	app.Commands = []cli.Command{
-		initCommand,
-		runCommand,
+		command.InitCommand,
+		command.RunCommand,
+		command.CommitCommand,
+		command.ListCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {

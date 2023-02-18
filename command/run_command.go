@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"MiniDocker/cgroup/subsystem"
@@ -8,13 +8,21 @@ import (
 	"github.com/urfave/cli"
 )
 
-var runCommand = cli.Command{
+var RunCommand = cli.Command{
 	Name:  "run",
 	Usage: `Create a container with namespace and cgroup limit miniDocker run -it [command]`,
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:  "it",
 			Usage: "enable tty",
+		},
+		cli.StringFlag{
+			Name:  "v",
+			Usage: "volume",
+		},
+		cli.BoolFlag{
+			Name:  "d",
+			Usage: "detach container",
 		},
 		cli.StringFlag{
 			Name:  "m",
@@ -28,6 +36,10 @@ var runCommand = cli.Command{
 			Name:  "cpuset",
 			Usage: "cpuset limit",
 		},
+		cli.StringFlag{
+			Name:  "name",
+			Usage: "container name",
+		},
 	},
 	// function that executes by 'miniDocker run' command
 	Action: func(context *cli.Context) error {
@@ -40,24 +52,18 @@ var runCommand = cli.Command{
 			cmdArr = append(cmdArr, arg)
 		}
 		tty := context.Bool("it")
+		detach := context.Bool("d")
+		volume := context.String("v")
+		if tty && detach {
+			return fmt.Errorf("`-it` and `-d` parameter can not be applied at the same time")
+		}
 		resConf := &subsystem.ResourceConfig{
 			MemoryLimit: context.String("m"),
 			CpuSet:      context.String("cpuset"),
 			CpuShare:    context.String("cpushare"),
 		}
-		StartContainer(tty, cmdArr, resConf)
+		log.Debugf("[command.RunCommand] start container")
+		container.StartContainer(tty, cmdArr, resConf, volume, context.String("name"))
 		return nil
-	},
-}
-var initCommand = cli.Command{
-	Name: "init",
-	Usage: "Initialize the container process that runs user's process in the container. " +
-		"Only for INTERNAL use. DO NOT call it outside.",
-	Action: func(context *cli.Context) error {
-		log.Info("[main.initCommand] Initializing the container")
-		cmd := context.Args().Get(0)
-		log.Infof("[main.initCommand] Input command: %s", cmd)
-		err := container.StartContainerInitProcess(cmd, nil)
-		return err
 	},
 }
